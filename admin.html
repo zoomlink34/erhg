@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CEO CONTROL CENTER</title>
+    <style>
+        body { font-family: sans-serif; background: #f4f4f4; padding: 20px; }
+        .order-card { background: white; padding: 20px; margin-bottom: 15px; border-radius: 8px; border-left: 10px solid #FCD535; }
+        .live-plots { background: #000; color: #fff; padding: 20px; margin-top: 30px; border-radius: 8px; }
+        button { padding: 10px; cursor: pointer; border: none; font-weight: bold; border-radius: 4px; }
+        .del-btn { background: #ff4d4d; color: white; margin-left: 10px; }
+    </style>
+</head>
+<body>
+    <h1>CEO DASHBOARD - MANAGE ORDERS</h1>
+    <div id="orders"></div>
+
+    <div class="live-plots">
+        <h2>LIVE PLOTS ON WALL (Click to Delete/Reset)</h2>
+        <div id="active-list"></div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+    <script>
+        firebase.initializeApp({databaseURL: "https://m-legacy-5cf2b-default-rtdb.firebaseio.com/"});
+        const db = firebase.database();
+
+        // পেন্ডিং অর্ডার লোড
+        db.ref('orders').on('value', s => {
+            const list = document.getElementById('orders'); list.innerHTML = "";
+            const data = s.val(); if(!data) return list.innerHTML = "No new orders.";
+            Object.keys(data).forEach(id => {
+                list.innerHTML += `<div class="order-card">
+                    <b>Plot ID: ${id}</b> | Name: ${data[id].name} <br><br>
+                    <input type="text" id="img_${id}" placeholder="Logo URL (ImgBB)">
+                    <button onclick="approve('${id}', '${data[id].name}')" style="background:#2ebd85; color:white;">APPROVE & GO LIVE</button>
+                    <button onclick="reject('${id}')" style="background:red; color:white;">REJECT</button>
+                </div>`;
+            });
+        });
+
+        // লাইভ প্লট লোড (এখান থেকে ডিলিট করে ঘর ফাঁকা করা যাবে)
+        db.ref('pixels').on('value', s => {
+            const list = document.getElementById('active-list'); list.innerHTML = "";
+            const data = s.val(); if(!data) return;
+            Object.keys(data).forEach(id => {
+                list.innerHTML += `<div style="padding:10px; border-bottom:1px solid #333">
+                    Plot ${data[id].plotID}: ${data[id].name} 
+                    <button class="del-btn" onclick="deletePlot('${id}')">DELETE/RESET PLOT</button>
+                </div>`;
+            });
+        });
+
+        function approve(id, name) {
+            const img = document.getElementById('img_'+id).value;
+            if(!img) return alert("Logo URL missing!");
+            const x = ((id-1)%100)*40, y = Math.floor((id-1)/100)*25;
+            db.ref('pixels/'+id).set({name, imageUrl:img, x, y, plotID:id}).then(() => {
+                db.ref('notifications/'+id).set({status: "Approved", message: "Your brand is live!"});
+                db.ref('orders/'+id).remove();
+            });
+        }
+        function reject(id) {
+            db.ref('notifications/'+id).set({status: "Rejected", message: "Payment verification failed."});
+            db.ref('orders/'+id).remove();
+        }
+        function deletePlot(id) {
+            if(confirm("Are you sure to delete this plot and make it empty?")) {
+                db.ref('pixels/'+id).remove();
+                db.ref('notifications/'+id).remove();
+            }
+        }
+    </script>
+</body>
+</html>
