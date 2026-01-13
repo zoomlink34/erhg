@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>RESERVE YOUR LEGACY</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+    <style>
+        body { background: #0B0E11; color: #fff; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .order-box { background: #1E2329; padding: 40px; border-radius: 15px; border: 1px solid #FCD535; text-align: center; width: 350px; }
+        input { width: 90%; padding: 15px; margin: 10px 0; background: #2B3139; border: 1px solid #444; color: #fff; border-radius: 5px; }
+        .btn { width: 100%; padding: 15px; background: #FCD535; color: #000; font-weight: bold; border-radius: 5px; cursor: pointer; border: none; font-size: 16px; }
+        
+        #celebration { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 1000; flex-direction: column; justify-content: center; align-items: center; }
+        .congrats-msg { font-size: 45px; color: #FCD535; font-weight: 900; text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="order-box" id="f-box">
+        <h2 style="color:#FCD535">RESERVE PLOT</h2>
+        <input type="text" id="bname" placeholder="Brand Name">
+        <input type="number" id="pnum" placeholder="Plot ID (1-5000)">
+        <button class="btn" onclick="fireOrder()">SUBMIT ORDER</button>
+    </div>
+
+    <div id="celebration">
+        <div class="congrats-msg">CONGRATULATIONS! 🎉</div>
+        <h1 id="brand-name-display" style="color:white; margin:20px 0;"></h1>
+        <p style="color:#FCD535; font-size:22px;">Your Legacy request is submitted successfully!</p>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+    <script>
+        firebase.initializeApp({databaseURL: "https://m-legacy-5cf2b-default-rtdb.firebaseio.com/"});
+        function fireOrder() {
+            const name = document.getElementById('bname').value, p = document.getElementById('pnum').value;
+            if(!name || !p) return alert("Fill all info");
+            
+            // প্লট নাম্বারই অর্ডার আইডি হিসেবে কাজ করবে
+            firebase.database().ref('orders/' + p).set({ name, plotID: p }).then(() => {
+                document.getElementById('brand-name-display').innerText = name;
+                document.getElementById('f-box').style.display = 'none';
+                document.getElementById('celebration').style.display = 'flex';
+                
+                // অতি পরিমাণে রঙিন কাগজ (Confetti)
+                var duration = 4 * 1000;
+                var end = Date.now() + duration;
+                (function frame() {
+                    confetti({ particleCount: 15, angle: 60, spread: 55, origin: { x: 0 }, colors: ['#FCD535', '#ffffff', '#ff9900'] });
+                    confetti({ particleCount: 15, angle: 120, spread: 55, origin: { x: 1 }, colors: ['#FCD535', '#ffffff', '#ff9900'] });
+                    if (Date.now() < end) { requestAnimationFrame(frame); }
+                }());
+
+                setTimeout(() => { window.location.href = "index.html"; }, 4500);
+            });
+        }
+    </script>
+</body>
+</html>
